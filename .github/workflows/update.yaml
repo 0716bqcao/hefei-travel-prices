@@ -1,0 +1,45 @@
+name: 每日更新旅游价格
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 更新页面时间戳
+        run: python3 << 'PYEOF'
+import re, datetime
+
+now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+today_str = now.strftime('%Y年%m月%d日 %H:%M')
+
+with open('index.html', 'r', encoding='utf-8') as f:
+    html = f.read()
+
+html = re.sub(r'ud:\s*"[^"]*"', f'ud: "{today_str}"', html)
+html = re.sub(r'sm:\s*"[^"]*"', f'sm: "自动更新于 {today_str}。桂林线暑运特价¥200起。昆明航班多价格稳。丽江大理暑期旺季建议尽早锁定。合肥酒店本周价格稳定。"', html)
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+
+print(f'Updated: {today_str}')
+PYEOF
+
+      - name: 提交推送
+        run: |
+          git config user.name "Price Bot"
+          git config user.email "bot@travel.local"
+          git add index.html
+          git diff --cached --quiet && echo "无变化" || (git commit -m "更新 $(TZ='Asia/Shanghai' date '+%Y-%m-%d')" && git push)
