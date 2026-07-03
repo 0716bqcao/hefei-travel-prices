@@ -1,0 +1,161 @@
+name: 每日更新旅游价格
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install requests beautifulsoup4
+
+      - name: 搜索机票价格
+        run: |
+          echo "=== 搜索去程机票 ==="
+          python3 << 'PYEOF'
+          import requests, json, os, re
+          from datetime import datetime, timezone, timedelta
+
+          tz = timezone(timedelta(hours=8))
+          today = datetime.now(tz).strftime('%m-%d')
+
+          queries = [
+            ("hfe-kwl", "2026年7月 8月 合肥到桂林 最低机票"),
+            ("hfe-kmg", "2026年7月 8月 合肥到昆明 最低机票"),
+            ("hfe-ljg", "2026年7月 8月 合肥到丽江 最低机票"),
+            ("hfe-dlu", "2026年7月 8月 合肥到大理 最低机票"),
+            ("hfe-jhg", "2026年7月 8月 合肥到西双版纳 最低机票"),
+            ("hfe-dig", "2026年7月 8月 合肥到香格里拉 最低机票"),
+            ("kwl-hfe", "2026年7月 8月 桂林到合肥 机票 返程"),
+            ("kmg-hfe", "2026年7月 8月 昆明到合肥 机票 返程"),
+            ("ljg-hfe", "2026年7月 8月 丽江到合肥 机票 返程"),
+            ("dlu-hfe", "2026年7月 8月 大理到合肥 机票 返程"),
+            ("jhg-hfe", "2026年7月 8月 西双版纳到合肥 机票 返程"),
+            ("dig-hfe", "2026年7月 8月 香格里拉到合肥 机票 返程"),
+          ]
+
+          headers = {"User-Agent": "Mozilla/5.0 (compatible; PriceMonitor/1.0)"}
+          results = {}
+
+          for route_id, query in queries:
+              try:
+                  # Use DuckDuckGo as a simple search fallback
+                  url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
+                  resp = requests.get(url, headers=headers, timeout=15)
+                  text = resp.text[:5000]
+                  # Extract price-like patterns
+                  prices = re.findall(r'[¥￥]\s*(\d{3,4})', text)
+                  if prices:
+                      results[route_id] = min(int(p) for p in prices)
+                      print(f"  {route_id}: ¥{results[route_id]}")
+                  else:
+                      results[route_id] = None
+                      print(f"  {route_id}: 未找到价格")
+              except Exception as e:
+                  print(f"  {route_id}: 搜索失败 ({e})")
+                  results[route_id] = None
+
+          with open('/tmp/flight_prices.json', 'w') as f:
+              json.dump(results, f, ensure_ascii=False)
+          PYEOF
+
+      - name: 更新历史价格数据
+        run: python3 << 'PYEOF'
+        import json, os
+        from datetime import datetime, timezone, timedelta
+
+        tz = timezone(timedelta(hours=8))
+        today_key = datetime.now(tz).strftime('%m-%d')
+
+        # Load search results
+        flight_prices = {}
+        if os.path.exists('/tmp/flight_prices.json'):
+            with open('/tmp/flight_prices.json') as f:
+                flight_prices = json.load(f)
+
+        # Load or create price history
+        prices = {}
+        if os.path.exists('prices.json'):
+            with open('prices.json') as f:
+                prices = json.load(f)
+
+        if today_key not in prices:
+            prices[today_key] = {}
+
+        # Map search results to route IDs
+        route_map = {
+            'hfe-kwl': 'hfe-kwl', 'hfe-kmg': 'hfe-kmg',
+            'hfe-ljg': 'hfe-ljg', 'hfe-dlu': 'hfe-dlu',
+            'hfe-jhg': 'hfe-jhg', 'hfe-dig': 'hfe-dig',
+        }
+
+        for route_id, search_id in route_map.items():
+            if flight_prices.get(search_id):
+                prices[today_key][route_id] = flight_prices[search_id]
+                print(f"  {route_id}: ¥{flight_prices[search_id]}")
+
+        # Keep last 30 days
+        keys = sorted(prices.keys())[-30:]
+        prices = {k: prices[k] for k in keys}
+
+        with open('prices.json', 'w') as f:
+            json.dump(prices, f, ensure_ascii=False, indent=2)
+
+        print(f"Saved {len(prices)} days of history")
+        PYEOF
+
+      - name: 更新HTML页面
+        run: python3 << 'PYEOF'
+        import re, json, os
+        from datetime import datetime, timezone, timedelta
+
+        tz = timezone(timedelta(hours=8))
+        now = datetime.now(tz)
+        today_str = now.strftime('%Y年%m月%d日 %H:%M')
+        today_key = now.strftime('%m-%d')
+
+        with open('index.html', 'r', encoding='utf-8') as f:
+            html = f.read()
+
+        # Update date
+        html = re.sub(r'ud:\s*"[^"]*"', f'ud: "{today_str}"', html)
+        html = re.sub(r'sm:\s*"[^"]*"', f'sm: "更新于{today_str}。桂林暑运特价可关注。昆明航班多价格稳。新增加西双版纳和香格里拉。返程建议提前订。丽江大理暑期旺季建议尽早锁定。"', html)
+
+        # Update price history in HTML
+        if os.path.exists('prices.json'):
+            with open('prices.json') as f:
+                hist = json.load(f)
+            hist_str = json.dumps(hist, ensure_ascii=False)
+            html = re.sub(r'history:\s*\{[^}]*\}\s*,\s*\}', f'history:{hist_str},', html, count=1)
+            # Also try multiline match
+            html = re.sub(r'history:\s*\{[\s\S]*?\n\s*\},', f'history:{hist_str},\n  ', html, count=1)
+
+        with open('index.html', 'w', encoding='utf-8') as f:
+            f.write(html)
+
+        print(f'HTML updated: {today_str}')
+        PYEOF
+
+      - name: 提交推送
+        run: |
+          git config user.name "Price Bot"
+          git config user.email "bot@travel.local"
+          git add index.html prices.json
+          if git diff --cached --quiet; then
+            echo "无变化"
+          else
+            git commit -m "📊 每日更新 $(TZ='Asia/Shanghai' date '+%Y-%m-%d')"
+            git push
+            echo "推送成功!"
+          fi
