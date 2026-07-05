@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
+<title>合肥暑期旅游 · 往返比价</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+body{background:linear-gradient(180deg,#FEFAF5 0%,#FFF8F0 30%,#F0F7FA 100%);min-height:100vh;font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;color:#333}
+.hbg{background:linear-gradient(135deg,#FF7B3D 0%,#EAA24A 45%,#2E8FB8 100%)}
+.card{background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.7);border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,0.04);overflow:hidden}
+.card2{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,0.05);border:1px solid #f0f0f0}
+.up{color:#DC2626}.dn{color:#059669}.warn{color:#D97706}
+.badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap;display:inline-block}
+.bd-good{background:#D1FAE5;color:#059669}.bd-norm{background:#FEF3C7;color:#B45309}.bd-hot{background:#FEE2E2;color:#DC2626}.bd-info{background:#DBEAFE;color:#2563EB}.bd-best{background:linear-gradient(135deg,#FF7B3D,#E8652A);color:#fff}
+.sec-title{font-size:17px;font-weight:700;color:#103749;padding-left:12px;border-left:4px solid #FF7B3D;margin:20px 0 10px}
+.tbl-w{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:420px}
+th{text-align:left;padding:6px 7px;background:#FDF2E4;color:#7A2D10;font-weight:600;font-size:11px}
+td{padding:7px 7px;border-bottom:1px solid #f5f0eb}
+.btn{background:linear-gradient(135deg,#FF7B3D,#E8652A);color:#fff;padding:5px 14px;border-radius:18px;font-size:11px;font-weight:500;text-decoration:none;display:inline-block;white-space:nowrap}
+.btn-sm{padding:3px 10px;font-size:10px;border-radius:14px}
+.btn-ol{background:#fff;color:#FF7B3D;border:1px solid #FF7B3D;padding:3px 10px;border-radius:14px;font-size:10px;text-decoration:none;white-space:nowrap}
+.gauge{height:5px;border-radius:3px;background:#e5e7eb;overflow:hidden;min-width:50px}
+.gauge-fill{height:100%;border-radius:3px}
+.chart-box{position:relative;height:200px}
+.tab{font-size:11px;padding:5px 12px;border-radius:16px;border:1px solid #e5e7eb;background:#fff;color:#666;cursor:pointer;white-space:nowrap}
+.tab.on{background:#FF7B3D;color:#fff;border-color:#FF7B3D}
+.stat-n{font-size:20px;font-weight:800}.stat-l{font-size:11px;color:#888}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:480px){.g3{grid-template-columns:1fr 1fr 1fr}.g2{grid-template-columns:1fr}}
+.dt-g{background:#ADD9EA40;color:#1C5F7D}.dt-k{background:#FDE68A30;color:#92400E}
+.dt-l{background:#DDD6FE40;color:#5B21B6}.dt-d{background:#A7F3D030;color:#065F46}
+.dt-x{background:#FECACA40;color:#991B1B}.dt-s{background:#E5E7EB60;color:#374151}
+</style>
+</head>
+<body>
+
+<div class="hbg text-white px-4 pt-8 pb-6 rounded-b-[28px] shadow-lg">
+<div class="text-xs opacity-75 mb-1">🏖️ 合肥暑期旅游 · 往返比价</div>
+<div class="flex items-center justify-between"><h1 class="text-xl font-black">6目的地 · 7-8月</h1><span class="text-xs bg-white/20 px-3 py-1 rounded-full" id="updateDate">---</span></div>
+<div class="g3 mt-3" id="quickStats"></div>
+</div>
+
+<div class="px-3 pb-8 max-w-3xl mx-auto" style="margin-top:-6px">
+
+<div class="card p-3 relative z-10 mx-1 mb-2" style="background:rgba(254,243,199,0.85);border-color:#FDE68A">
+<p class="text-xs text-yellow-800 leading-relaxed"><strong>⚠️ 关于价格：</strong>显示的是搜索结果中的近期最低参考价（含早鸟/促销/会员价）。价格实时变动，<strong>请点击链接到平台查看实时价格并多平台比价后下单</strong>。</p>
+</div>
+
+<div class="card p-3 relative z-10 mx-1 mb-3"><p class="text-xs text-gray-600 leading-relaxed" id="summaryText"></p></div>
+
+<!-- ====== 往返组合卡片 ====== -->
+<h2 class="sec-title">🎯 最佳往返日期组合</h2>
+<p class="text-xs text-gray-400 -mt-2 mb-2 pl-3">去程+返程配对 · 按总价排序 · 点击直接跳转对应日期</p>
+<div id="tripCards"></div>
+
+<!-- ====== 价格走势 ====== -->
+<h2 class="sec-title">📈 价格走势</h2>
+<div class="flex gap-1.5 mb-2 flex-wrap" id="chartTabs"></div>
+<div class="card p-3 mb-2"><div class="chart-box"><canvas id="chart1"></canvas></div></div>
+<div class="card p-3 mb-3"><div class="chart-box"><canvas id="chart2"></canvas></div></div>
+
+<!-- ====== 酒店 ====== -->
+<h2 class="sec-title">🏨 合肥酒店 · 本周参考价</h2>
+<div id="hefeiHotels"></div>
+
+<h2 class="sec-title">🏖️ 目的地住宿参考</h2>
+<div id="destHotels"></div>
+
+<!-- ====== 特价 + 快捷入口 ====== -->
+<h2 class="sec-title">🔥 推荐</h2>
+<div id="hotDeals" class="mb-3"></div>
+
+<h2 class="sec-title">📎 快捷预订入口</h2>
+<div class="g2" id="quickLinks"></div>
+
+<div class="text-center text-xs text-gray-400 mt-6 mb-6">
+<p>价格来源：携程·去哪儿·飞猪·Trip.com 公开搜索 | 自动更新 | 实际价格以平台为准</p>
+</div>
+</div>
+
+<script>
+// ==================== 数据层 ====================
+// R: route definitions; D: daily data (updated by GitHub Action)
+var R=[
+  {id:'hfe-kwl',city:'桂林',code:'KWL',e:'🏯',dt:'dt-g',bl:200,blR:350,blH:180,hotU:'https://hotels.ctrip.com/hotel/guilin/'},
+  {id:'hfe-kmg',city:'昆明',code:'KMG',e:'🌸',dt:'dt-k',bl:330,blR:450,blH:150,hotU:'https://hotels.ctrip.com/hotel/kunming/'},
+  {id:'hfe-ljg',city:'丽江',code:'LJG',e:'🏔️',dt:'dt-l',bl:760,blR:920,blH:280,hotU:'https://hotels.ctrip.com/hotel/lijiang/'},
+  {id:'hfe-dlu',city:'大理',code:'DLU',e:'🌊',dt:'dt-d',bl:490,blR:680,blH:220,hotU:'https://hotels.ctrip.com/hotel/dali/'},
+  {id:'hfe-jhg',city:'西双版纳',code:'JHG',e:'🌴',dt:'dt-x',bl:600,blR:720,blH:260,hotU:'https://hotels.ctrip.com/hotel/jinghong/'},
+  {id:'hfe-dig',city:'香格里拉',code:'DIG',e:'⛰️',dt:'dt-s',bl:900,blR:1020,blH:280,hotU:'https://hotels.ctrip.com/hotel/shangri-la/'}
+];
+
+// Helper: "7/8" → "2026-07-08"
+function dt(d){var p=d.split('/');return '2026-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}
+// Flight URL with date
+function fUrl(from,to,d){return 'https://flights.ctrip.com/booking/'+from+'-'+to+'-day-1.html?ddate1='+dt(d);}
+
+var D={
+  ud:"2026年7月3日 22:30",
+  sm:"今日总体平稳。桂林暑运特价¥200起票源充足；昆明航班多价格稳定；丽江大理暑期旺季建议尽早锁定；西双版纳性价比较高；香格里拉航线偏贵可考虑飞昆明中转。以下为各目的地最优去返日期组合。",
+
+  // 往返组合 —— 每个目的地2-3组 (od=去程日期, op=去程价, rd=返程日期, rp=返程价)
+  trips:{
+    'hfe-kwl':[
+      {od:'7/8',op:200,oa:'桂林航空',ot:'23:45→01:45',rd:'7/11',rp:350,ra:'桂林航空',rt:'07:30→09:30'},
+      {od:'7/17',op:430,oa:'西部航空',ot:'16:05→18:05',rd:'7/20',rp:480,ra:'山东航空',rt:'15:00→17:05'},
+      {od:'7/24',op:380,oa:'东方航空',ot:'17:25→19:35',rd:'7/27',rp:420,ra:'东方航空',rt:'14:00→16:10'},
+    ],
+    'hfe-kmg':[
+      {od:'7/2',op:330,oa:'东方航空',ot:'08:05→10:40',rd:'7/5',rp:450,ra:'东方航空',rt:'20:00→22:40'},
+      {od:'7/8',op:380,oa:'祥鹏航空',ot:'11:30→14:10',rd:'7/11',rp:520,ra:'祥鹏航空',rt:'15:00→17:40'},
+      {od:'7/15',op:420,oa:'四川航空',ot:'19:30→22:15',rd:'7/18',rp:480,ra:'四川航空',rt:'16:00→18:45'},
+    ],
+    'hfe-ljg':[
+      {od:'7/8',op:760,oa:'西部航空',ot:'07:50→10:45',rd:'7/11',rp:920,ra:'西部航空',rt:'11:30→14:20'},
+      {od:'7/13',op:1080,oa:'青岛航空',ot:'09:00→11:55',rd:'7/16',rp:1150,ra:'青岛航空',rt:'12:30→15:25'},
+    ],
+    'hfe-dlu':[
+      {od:'7/8',op:490,oa:'祥鹏航空',ot:'12:40→17:05',rd:'7/11',rp:680,ra:'祥鹏航空',rt:'17:50→22:10'},
+      {od:'7/8',op:680,oa:'飞昆明+高铁',ot:'灵活出发',rd:'7/11',rp:520,ra:'高铁+飞',rt:'灵活',n:'省钱方案'},
+    ],
+    'hfe-jhg':[
+      {od:'7/10',op:680,oa:'祥鹏航空',ot:'10:30→13:50',rd:'7/13',rp:720,ra:'祥鹏航空',rt:'14:30→17:50'},
+      {od:'7/15',op:850,oa:'东方航空',ot:'08:00→11:20',rd:'7/18',rp:890,ra:'东方航空',rt:'12:00→15:20'},
+      {od:'7/12',op:720,oa:'昆明航空',ot:'14:00→17:30',rd:'7/15',rp:760,ra:'昆明航空',rt:'15:00→18:30'},
+    ],
+    'hfe-dig':[
+      {od:'7/12',op:950,oa:'东方航空',ot:'08:00→11:30',rd:'7/15',rp:1020,ra:'东方航空',rt:'12:00→14:30'},
+      {od:'7/10',op:860,oa:'飞昆明+大巴',ot:'灵活出发',rd:'7/13',rp:600,ra:'大巴+飞',rt:'灵活',n:'省钱方案'},
+    ]
+  },
+
+  hotels:{
+    o:[{n:'南站中央公园上海路店',r:'商务大床房',p:326,s:9.8,l:'https://hotels.ctrip.com/hotel/hefei125/'},{n:'创新产业园银泰城店',r:'高级大床房',p:350,s:9.8,l:'https://hotels.ctrip.com/hotel/hefei124/'},{n:'淮河路步行街店',r:'豪华大床房',p:405,s:9.8,l:'https://hotels.ctrip.com/hotel/hefei132/'},{n:'高新区中国声谷店',r:'商务大床房',p:400,s:9.9,l:'https://hotels.ctrip.com/hotel/hefei131/'},{n:'中央公园上海路店',r:'行政大床房',p:553,s:9.8,l:'https://hotel.qunar.com/city/hefei/'}],
+    a:[{n:'西站西广场店',r:'雅致大床房',p:320,s:9.2,l:'https://hotels.ctrip.com/hotel/hefei134/'},{n:'庐阳万象汇店',r:'高级大床房',p:325,s:9.7,l:'https://hotels.ctrip.com/hotel/hefei932/'},{n:'长江西路科学大道店',r:'雅致大床房',p:335,s:9.6,l:'https://hotels.ctrip.com/hotel/hefei111/'},{n:'淮河路步行街明光路店',r:'雅致大床房',p:348,s:9.6,l:'https://hotels.ctrip.com/hotel/hefei/'},{n:'黄山路中科大店',r:'几木大床房',p:465,s:9.7,l:'https://hotels.ctrip.com/hotel/hefei556/'}]
+  },
+
+  dh:{
+    guilin:[{n:'漓江大瀑布饭店',c:'象山区·两江四湖',r:'标准间',p:280,l:'https://hotels.ctrip.com/hotel/guilin/'},{n:'阳朔西街客栈',c:'阳朔·西街',r:'大床房',p:180,l:'https://hotel.qunar.com/city/guilin/'},{n:'两江四湖亚朵',c:'秀峰区',r:'雅致大床房',p:350,l:'https://www.fliggy.com/'}],
+    kunming:[{n:'翠湖宾馆',c:'翠湖·市中心',r:'标准间',p:320,l:'https://hotels.ctrip.com/hotel/kunming/'},{n:'南屏街亚朵',c:'南屏街',r:'雅致大床房',p:280,l:'https://hotel.qunar.com/city/kunming/'},{n:'火车站汉庭',c:'火车站',r:'大床房',p:150,l:'https://www.fliggy.com/'}],
+    lijiang:[{n:'四方街客栈',c:'大研古城',r:'纳西庭院房',p:280,l:'https://hotels.ctrip.com/hotel/lijiang/'},{n:'束河花间堂',c:'束河古镇',r:'观景大床房',p:420,l:'https://hotel.qunar.com/city/lijiang/'},{n:'古城南门亚朵',c:'古城南门',r:'雅致大床房',p:350,l:'https://www.fliggy.com/'}],
+    dali:[{n:'邻家客栈',c:'大理古城',r:'白族庭院房',p:220,l:'https://hotels.ctrip.com/hotel/dali/'},{n:'双廊海景客栈',c:'双廊·洱海边',r:'海景大床房',p:480,l:'https://hotel.qunar.com/city/dali/'},{n:'古城亚朵',c:'大理古城',r:'雅致大床房',p:320,l:'https://www.fliggy.com/'}],
+    banna:[{n:'告庄西双景客栈',c:'告庄·星光夜市',r:'傣式庭院房',p:260,l:'https://hotels.ctrip.com/hotel/jinghong/'},{n:'景洪亚朵',c:'景洪市区',r:'雅致大床房',p:300,l:'https://hotel.qunar.com/city/jinghong/'},{n:'万达文华',c:'万达度假区',r:'豪华大床房',p:550,l:'https://www.fliggy.com/'}],
+    xgll:[{n:'独克宗古城客栈',c:'独克宗古城',r:'藏式庭院房',p:280,l:'https://hotels.ctrip.com/hotel/shangri-la/'},{n:'松赞林卡',c:'松赞林寺旁',r:'藏式套房',p:680,l:'https://hotel.qunar.com/city/shangri-la/'},{n:'香格里拉亚朵',c:'市区',r:'雅致大床房',p:350,l:'https://www.fliggy.com/'}]
+  },
+
+  history:{
+    '06-25':{'hfe-kwl':220,'hfe-kmg':350,'hfe-ljg':780,'hfe-dlu':520,'hfe-jhg':700,'hfe-dig':980},
+    '06-28':{'hfe-kwl':210,'hfe-kmg':340,'hfe-ljg':770,'hfe-dlu':510,'hfe-jhg':690,'hfe-dig':970},
+    '07-01':{'hfe-kwl':200,'hfe-kmg':330,'hfe-ljg':760,'hfe-dlu':500,'hfe-jhg':680,'hfe-dig':960},
+    '07-03':{'hfe-kwl':200,'hfe-kmg':330,'hfe-ljg':760,'hfe-dlu':490,'hfe-jhg':680,'hfe-dig':950}
+  },
+
+  hd:[{e:'✈️',c:'桂林往返 ¥550 暑运特价 7/8-7/11',l:'https://flights.ctrip.com/booking/hfe-kwl-day-1.html?ddate1=2026-07-08'},{e:'✈️',c:'昆明往返 ¥780 东方航空 7/2-7/5',l:'https://flights.ctrip.com/booking/hfe-kmg-day-1.html?ddate1=2026-07-02'},{e:'🏨',c:'桔子水晶南站店 ¥326/晚',l:'https://hotels.ctrip.com/hotel/hefei125/'}]
+};
+
+// ==================== 渲染 ====================
+function badge(p,bl){var r=p/bl;return r<=0.9?'<span class="badge bd-good">好价</span>':r<=1.15?'<span class="badge bd-norm">正常</span>':'<span class="badge bd-hot">偏贵</span>';}
+function gauge(p,bl){var r=Math.min(p/bl,1.8),w=Math.round(r*55);var c=r<=0.9?'#059669':r<=1.15?'#D97706':'#DC2626';return'<div class="gauge"><div class="gauge-fill" style="width:'+w+'%;background:'+c+'"></div></div>';}
+function lnk(href,label){return'<a href="'+href+'" target="_blank" class="'+(label==='去程'||label==='返程'?'btn-ol':'btn')+'">'+label+'</a>';}
+
+// Stats
+function rStats(){
+  var best=null,most=null,deals=0;
+  R.forEach(function(r){
+    var t=D.trips[r.id];if(!t||!t.length)return;
+    var tr=t[0],tot=tr.op+tr.rp;
+    if(!best||tot<best.tot) best={e:r.e,city:r.city,tot:tot};
+    var save=Math.round((1-(tr.op+tr.rp)/(r.bl+r.blR))*100);
+    if(!most||save>most.save) most={e:r.e,city:r.city,save:save};
+    if(tr.op<=r.bl) deals++;
+  });
+  var h='';
+  if(best) h+='<div class="card2 p-2 text-center"><div class="stat-n dn">¥'+best.tot+'</div><div class="stat-l">'+best.e+'最低往返价</div></div>';
+  if(most) h+='<div class="card2 p-2 text-center"><div class="stat-n dn">-'+most.save+'%</div><div class="stat-l">'+most.e+'低于基准</div></div>';
+  h+='<div class="card2 p-2 text-center"><div class="stat-n">'+deals+'/6</div><div class="stat-l">目的地有好价</div></div>';
+  document.getElementById('quickStats').innerHTML=h;
+}
+
+// TRIP CARDS - the main feature
+function rTripCards(){
+  var h='';
+  R.forEach(function(r){
+    var ts=D.trips[r.id];if(!ts||!ts.length)return;
+    var best=ts[0],bestTot=best.op+best.rp;
+    h+='<div class="card mb-2"><div style="padding:10px 12px;background:linear-gradient(135deg,#f8f6f3,#fff);border-bottom:1px solid #f0ede8">';
+    h+='<div class="flex items-center justify-between"><div class="flex items-center gap-2"><span style="font-size:20px">'+r.e+'</span><span class="font-bold">'+r.city+'</span><span class="badge bd-info">基准往返 ¥'+(r.bl+r.blR)+'</span></div>';
+    h+='<span class="text-xs text-gray-400">最优 ¥'+bestTot+'</span></div></div>';
+
+    // Each round-trip combo
+    h+='<div style="padding:8px 12px">';
+    ts.forEach(function(t,i){
+      var tot=t.op+t.rp,isBest=i===0;
+      h+='<div style="padding:8px 0;'+(i<ts.length-1?'border-bottom:1px dashed #f0ede8':'')+'">';
+      // Row: number + outbound → return + total + links
+      h+='<div class="flex items-center gap-2 flex-wrap">';
+      h+='<span class="text-xs font-bold text-gray-400 w-5">#'+(i+1)+'</span>';
+      // Outbound
+      h+='<div style="flex:1;min-width:140px"><div class="flex items-center gap-1"><span class="text-xs text-gray-500">去</span><span class="font-bold text-sm">'+t.od+'</span><span class="font-bold '+(t.op<=r.bl?'dn':'')+'">¥'+t.op+'</span></div><div class="text-xs text-gray-400">'+t.oa+' '+t.ot+(t.n?' <span class="badge bd-info">'+t.n+'</span>':'')+'</div></div>';
+      // Return
+      h+='<div style="flex:1;min-width:140px"><div class="flex items-center gap-1"><span class="text-xs text-gray-500">返</span><span class="font-bold text-sm">'+t.rd+'</span><span class="font-bold">¥'+t.rp+'</span></div><div class="text-xs text-gray-400">'+t.ra+' '+t.rt+'</div></div>';
+      // Total + link buttons
+      h+='<div class="text-center" style="min-width:80px"><div class="font-black text-base '+(isBest?'dn':'')+'">¥'+tot+'</div><div class="text-xs text-gray-400">往返总价</div></div>';
+      h+='<div class="flex gap-1">'+lnk(fUrl('hfe',r.code.toLowerCase(),t.od),'去程')+lnk(fUrl(r.code.toLowerCase(),'hfe',t.rd),'返程')+'</div>';
+      h+='</div>';
+      // Quality bar
+      if(isBest) h+='<div class="mt-1 flex items-center gap-2"><span class="badge bd-best">最优组合</span>'+gauge(tot,r.bl+r.blR)+'<span class="text-xs text-gray-400">比基准往返省 ¥'+(r.bl+r.blR-tot)+'</span></div>';
+      h+='</div>';
+    });
+    h+='</div></div>';
+  });
+  document.getElementById('tripCards').innerHTML=h;
+}
+
+// Hotels
+function rHotels(){
+  var h='';
+  [{b:'桔子水晶',c:'orange',dot:'bg-orange-500',ds:D.hotels.o},{b:'亚朵',c:'atour',dot:'bg-blue-600',ds:D.hotels.a}].forEach(function(bd){
+    h+='<div class="card p-3 mb-2"><div class="flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full '+bd.dot+' inline-block"></span><span class="font-bold text-sm">'+bd.b+'</span><span class="text-xs text-gray-400">· 本周参考价</span></div>';
+    h+='<div class="tbl-w"><table><thead><tr><th>分店</th><th>房型</th><th>参考价/晚</th><th>评分</th><th>平台比价</th></tr></thead><tbody>';
+    bd.ds.forEach(function(hh,i){
+      h+='<tr><td class="text-xs">'+hh.n+'</td><td>'+hh.r+'</td><td class="font-bold '+(i===0?'dn':'')+'">¥'+hh.p+'<div class="text-xs text-gray-400 font-normal">参考价</div></td><td>⭐'+hh.s+'</td><td class="flex gap-1 flex-wrap">'+lnk(hh.l,'携程')+lnk('https://hotel.qunar.com/city/hefei/','去哪儿')+lnk('https://www.fliggy.com/','飞猪')+'</td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+  });
+  document.getElementById('hefeiHotels').innerHTML=h;
+}
+
+function rDestHotels(){
+  var cities=[{k:'guilin',n:'桂林',e:'🏯'},{k:'kunming',n:'昆明',e:'🌸'},{k:'lijiang',n:'丽江',e:'🏔️'},{k:'dali',n:'大理',e:'🌊'},{k:'banna',n:'西双版纳',e:'🌴'},{k:'xgll',n:'香格里拉',e:'⛰️'}];
+  var h='';
+  cities.forEach(function(c){
+    var hs=D.dh[c.k];if(!hs||!hs.length)return;
+    h+='<div class="card p-3 mb-2"><div class="font-bold text-sm mb-2">'+c.e+' '+c.n+'住宿</div>';
+    h+='<div class="tbl-w"><table><thead><tr><th>酒店</th><th>位置</th><th>房型</th><th>参考价/晚</th><th>平台</th></tr></thead><tbody>';
+    hs.forEach(function(hh,i){
+      h+='<tr><td class="text-xs font-medium">'+hh.n+'</td><td class="text-xs text-gray-500">'+hh.c+'</td><td>'+hh.r+'</td><td class="font-bold '+(i===0?'dn':'')+'">¥'+hh.p+'<div class="text-xs text-gray-400 font-normal">参考价</div></td><td class="flex gap-1 flex-wrap">'+lnk(hh.l,'查看')+'</td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+  });
+  document.getElementById('destHotels').innerHTML=h;
+}
+
+// Deals
+function rDeals(){
+  var el=document.getElementById('hotDeals');
+  if(!D.hd||!D.hd.length){el.innerHTML='<div class="card p-3"><p class="text-sm text-gray-500">暂无推荐</p></div>';return;}
+  el.innerHTML=D.hd.map(function(d){return'<div class="card p-3 mb-2 flex items-center justify-between"><div class="flex items-center gap-2"><span class="text-lg">'+d.e+'</span><div class="text-sm font-medium">'+d.c+'</div></div>'+lnk(d.l,'去预订')+'</div>';}).join('');
+}
+
+// Charts
+var c1=null,c2=null,curRoute='hfe-kwl';
+function drawCharts(rid){
+  curRoute=rid;
+  var r=R.find(function(x){return x.id===rid;});
+  var dates=[],prices=[],bls=[];
+  var keys=Object.keys(D.history).sort();
+  keys.forEach(function(k){dates.push(k);prices.push(D.history[k][rid]||null);bls.push(r.bl);});
+
+  var ctx1=document.getElementById('chart1').getContext('2d');
+  if(c1)c1.destroy();
+  c1=new Chart(ctx1,{type:'line',data:{labels:dates,datasets:[
+    {label:r.e+' '+r.city+' 最低去程价',data:prices,borderColor:'#FF7B3D',backgroundColor:'rgba(255,123,61,0.08)',fill:true,tension:0.3,pointRadius:5,pointBackgroundColor:'#FF7B3D',borderWidth:2},
+    {label:'基准 ¥'+r.bl,data:bls,borderColor:'#94a3b8',borderDash:[6,3],pointRadius:0,fill:false,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:r.e+' '+r.city+' 去程价格走势',font:{size:13},padding:8},legend:{position:'bottom',labels:{boxWidth:10,font:{size:10},padding:8}}},scales:{y:{title:{display:true,text:'¥'},ticks:{callback:function(v){return'¥'+v}}},x:{ticks:{font:{size:10}}}}}});
+
+  var ctx2=document.getElementById('chart2').getContext('2d');
+  if(c2)c2.destroy();
+  var colors=['#FF7B3D','#3B82F6','#8B5CF6','#10B981','#EF4444','#6B7280'];
+  var ds=R.map(function(rr,i){var pp=keys.map(function(k){return D.history[k][rr.id]||null;});return{label:rr.e+' '+rr.city,data:pp,borderColor:colors[i],backgroundColor:colors[i]+'15',fill:false,tension:0.3,pointRadius:3,borderWidth:2};});
+  c2=new Chart(ctx2,{type:'line',data:{labels:dates,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'6目的地 去程价格对比',font:{size:13},padding:8},legend:{position:'bottom',labels:{boxWidth:10,font:{size:9},padding:6}}},scales:{y:{title:{display:true,text:'¥'},ticks:{callback:function(v){return'¥'+v}}},x:{ticks:{font:{size:10}}}}}});
+
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  var ab=document.querySelector('.tab[data-route="'+rid+'"]');if(ab)ab.classList.add('on');
+}
+
+function rTabs(){var h='';R.forEach(function(r){h+='<button class="tab'+(r.id===curRoute?' on':'')+'" data-route="'+r.id+'" onclick="drawCharts(\''+r.id+'\')">'+r.e+' '+r.city+'</button>';});document.getElementById('chartTabs').innerHTML=h;}
+function rLinks(){var ls=[['✈️桂林','https://flights.ctrip.com/booking/hfe-kwl-day-1.html'],['✈️昆明','https://flights.ctrip.com/booking/hfe-kmg-day-1.html'],['✈️丽江','https://flights.ctrip.com/booking/hfe-ljg-day-1.html'],['✈️大理','https://flights.ctrip.com/booking/hfe-dlu-day-1.html'],['✈️版纳','https://flights.ctrip.com/booking/hfe-jhg-day-1.html'],['✈️香格里拉','https://flights.ctrip.com/booking/hfe-dig-day-1.html'],['🏨桔子水晶','https://hotels.ctrip.com/hotel/hefei/crystal-orange'],['🏨亚朵','https://hotels.ctrip.com/hotel/hefei/atour'],['🏯桂林','https://hotels.ctrip.com/hotel/guilin/'],['🌸昆明','https://hotels.ctrip.com/hotel/kunming/'],['🏔️丽江','https://hotels.ctrip.com/hotel/lijiang/'],['🌊大理','https://hotels.ctrip.com/hotel/dali/']];document.getElementById('quickLinks').innerHTML=ls.map(function(l){return'<a href="'+l[1]+'" target="_blank" class="card2 p-2 text-center text-xs font-medium">'+l[0]+'</a>';}).join('');}
+
+// Init
+document.getElementById('updateDate').textContent='📅 '+D.ud;
+document.getElementById('summaryText').textContent=D.sm;
+rStats();rTripCards();rHotels();rDestHotels();rDeals();rTabs();rLinks();drawCharts('hfe-kwl');
+</script>
+</body>
+</html>
